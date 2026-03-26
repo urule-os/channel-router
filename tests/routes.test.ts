@@ -6,7 +6,7 @@ describe('Channel Routes', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
-    app = buildServer({ logger: false });
+    app = await buildServer({ logger: false });
     await app.ready();
   });
 
@@ -91,6 +91,50 @@ describe('Channel Routes', () => {
       url: `/api/v1/channel-bindings/${binding.id}`,
     });
     expect(deleteAgain.statusCode).toBe(404);
+  });
+
+  it('POST /api/v1/channel-bindings with missing channelType returns 400', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/channel-bindings',
+      payload: {
+        channelId: 'C222',
+        workspaceId: 'ws-test',
+        config: { foo: 'bar' },
+      },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toBe('Validation failed');
+  });
+
+  it('POST /api/v1/channel-bindings with missing workspaceId returns 400', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/channel-bindings',
+      payload: {
+        channelType: 'slack',
+        channelId: 'C222',
+        config: { foo: 'bar' },
+      },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toBe('Validation failed');
+  });
+
+  it('POST /api/v1/identity-mappings with missing fields returns 400', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/identity-mappings',
+      payload: {
+        channelType: 'slack',
+        // missing channelUserId and uruleUserId
+      },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toBe('Validation failed');
   });
 
   it('identity mapping CRUD via HTTP', async () => {
