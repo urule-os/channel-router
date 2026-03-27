@@ -1,5 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import { ChannelManager } from './services/channel-manager.js';
 import { MessageRouter } from './services/message-router.js';
 import { SlackAdapter } from './adapters/slack.adapter.js';
@@ -37,7 +39,24 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
   });
 
   // Auth middleware
-  await app.register(authMiddleware, { publicRoutes: ['/healthz', '/api/v1/channels'] });
+  await app.register(authMiddleware, { publicRoutes: ['/healthz', '/api/v1/channels', '/docs'] });
+
+  // OpenAPI documentation
+  await app.register(swagger, {
+    openapi: {
+      info: {
+        title: 'Urule Channel Router API',
+        description: 'Multi-channel message normalization',
+        version: '0.1.0',
+      },
+      servers: [{ url: 'http://localhost:3006' }],
+      tags: [{ name: 'channels' }, { name: 'bindings' }, { name: 'identity' }],
+    },
+  });
+
+  await app.register(swaggerUi, {
+    routePrefix: '/docs',
+  });
 
   // Initialize services
   const channelManager = new ChannelManager();
